@@ -62,7 +62,7 @@ class LinearLayer(nn.Module):
             self.linear = nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
             self.tanh = nn.Tanh()
 
-    def forwared(self, x):
+    def forward(self, x):
         x = self.linear(x)
         x = self.tanh(x)
         return x
