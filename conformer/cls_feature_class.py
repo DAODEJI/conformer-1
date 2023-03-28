@@ -1,22 +1,20 @@
 # Contains routines for labels creation, features extraction and normalization
-#
-
-
 import os
 import numpy as np
 import scipy.io.wavfile as wav
 from sklearn import preprocessing
 import joblib
-from IPython import embed
+# from IPython import embed
 import matplotlib.pyplot as plot
 import librosa
-plot.switch_backend('agg')
 import shutil
 import math
 
+plot.switch_backend('agg')
+
 
 def nCr(n, r):
-    return math.factorial(n) // math.factorial(r) // math.factorial(n-r)
+    return math.factorial(n) // math.factorial(r) // math.factorial(n - r)
 
 
 class FeatureClass:
@@ -63,7 +61,8 @@ class FeatureClass:
 
         # Sound event classes dictionary
         self._unique_classes = params['unique_classes']
-        self._audio_max_len_samples = params['max_audio_len_s'] * self._fs  # TODO: Fix the audio synthesis code to always generate 60s of
+        self._audio_max_len_samples = params[
+                                          'max_audio_len_s'] * self._fs  # TODO: Fix the audio synthesis code to always generate 60s of
         # audio. Currently it generates audio till the last active sound event, which is not always 60s long. This is a
         # quick fix to overcome that. We need this because, for processing and training we need the length of features
         # to be fixed.
@@ -75,7 +74,7 @@ class FeatureClass:
         fs, audio = wav.read(audio_path)
         audio = audio[:, :self._nb_channels] / 32768.0 + self._eps
         if audio.shape[0] < self._audio_max_len_samples:
-            zero_pad = np.random.rand(self._audio_max_len_samples - audio.shape[0], audio.shape[1])*self._eps
+            zero_pad = np.random.rand(self._audio_max_len_samples - audio.shape[0], audio.shape[1]) * self._eps
             audio = np.vstack((audio, zero_pad))
         elif audio.shape[0] > self._audio_max_len_samples:
             audio = audio[:self._audio_max_len_samples, :]
@@ -91,7 +90,8 @@ class FeatureClass:
         nb_bins = self._nfft // 2
         spectra = np.zeros((self._max_feat_frames, nb_bins + 1, _nb_ch), dtype=complex)
         for ch_cnt in range(_nb_ch):
-            stft_ch = librosa.core.stft(np.asfortranarray(audio_input[:, ch_cnt]), n_fft=self._nfft, hop_length=self._hop_len,
+            stft_ch = librosa.core.stft(np.asfortranarray(audio_input[:, ch_cnt]), n_fft=self._nfft,
+                                        hop_length=self._hop_len,
                                         win_length=self._win_len, window='hann')
             spectra[:, :, ch_cnt] = stft_ch[:, :self._max_feat_frames].T
         return spectra
@@ -99,7 +99,7 @@ class FeatureClass:
     def _get_mel_spectrogram(self, linear_spectra):
         mel_feat = np.zeros((linear_spectra.shape[0], self._nb_mel_bins, linear_spectra.shape[-1]))
         for ch_cnt in range(linear_spectra.shape[-1]):
-            mag_spectra = np.abs(linear_spectra[:, :, ch_cnt])**2
+            mag_spectra = np.abs(linear_spectra[:, :, ch_cnt]) ** 2
             mel_spectra = np.dot(mag_spectra, self._mel_wts)
             log_mel_spectra = librosa.power_to_db(mel_spectra)
             mel_feat[:, :, ch_cnt] = log_mel_spectra
@@ -111,8 +111,9 @@ class FeatureClass:
         IVy = np.real(np.conj(linear_spectra[:, :, 0]) * linear_spectra[:, :, 1])
         IVz = np.real(np.conj(linear_spectra[:, :, 0]) * linear_spectra[:, :, 2])
 
-        normal = self._eps + (np.abs(linear_spectra[:, :, 0])**2 + np.abs(linear_spectra[:, :, 1])**2 + np.abs(linear_spectra[:, :, 2])**2 + np.abs(linear_spectra[:, :, 3])**2)/2.
-        #normal = np.sqrt(IVx**2 + IVy**2 + IVz**2) + self._eps
+        normal = self._eps + (np.abs(linear_spectra[:, :, 0]) ** 2 + np.abs(linear_spectra[:, :, 1]) ** 2 + np.abs(
+            linear_spectra[:, :, 2]) ** 2 + np.abs(linear_spectra[:, :, 3]) ** 2) / 2.
+        # normal = np.sqrt(IVx**2 + IVy**2 + IVz**2) + self._eps
         IVx = np.dot(IVx / normal, self._mel_wts)
         IVy = np.dot(IVy / normal, self._mel_wts)
         IVz = np.dot(IVz / normal, self._mel_wts)
@@ -130,10 +131,10 @@ class FeatureClass:
         gcc_feat = np.zeros((linear_spectra.shape[0], self._nb_mel_bins, gcc_channels))
         cnt = 0
         for m in range(linear_spectra.shape[-1]):
-            for n in range(m+1, linear_spectra.shape[-1]):
+            for n in range(m + 1, linear_spectra.shape[-1]):
                 R = np.conj(linear_spectra[:, :, m]) * linear_spectra[:, :, n]
-                cc = np.fft.irfft(np.exp(1.j*np.angle(R)))
-                cc = np.concatenate((cc[:, -self._nb_mel_bins//2:], cc[:, :self._nb_mel_bins//2]), axis=-1)
+                cc = np.fft.irfft(np.exp(1.j * np.angle(R)))
+                cc = np.concatenate((cc[:, -self._nb_mel_bins // 2:], cc[:, :self._nb_mel_bins // 2]), axis=-1)
                 gcc_feat[:, :, cnt] = cc
                 cnt += 1
         return gcc_feat.transpose((0, 2, 1)).reshape((linear_spectra.shape[0], -1))
@@ -186,7 +187,7 @@ class FeatureClass:
                 wav_filename = '{}.wav'.format(file_name.split('.')[0])
                 spect = self._get_spectrogram_for_file(os.path.join(self._aud_dir, split, wav_filename))
 
-                #extract mel
+                # extract mel
                 mel_spect = self._get_mel_spectrogram(spect)
 
                 feat = None
@@ -203,7 +204,7 @@ class FeatureClass:
                     exit()
 
                 if feat is not None:
-                    print('\t{}: {}, {}'.format(file_cnt, file_name, feat.shape ))
+                    print('\t{}: {}, {}'.format(file_cnt, file_name, feat.shape))
                     np.save(os.path.join(self._feat_dir, '{}.npy'.format(wav_filename.split('.')[0])), feat)
 
     def preprocess_features(self):
@@ -283,10 +284,11 @@ class FeatureClass:
             _frame_ind = int(_words[0])
             if _frame_ind not in _output_dict:
                 _output_dict[_frame_ind] = []
-            if len(_words) == 5: #read polar coordinates format, we ignore the track count 
+            if len(_words) == 5:  # read polar coordinates format, we ignore the track count
                 _output_dict[_frame_ind].append([int(_words[1]), float(_words[3]), float(_words[4]), int(_words[2])])
-            elif len(_words) == 6: # read Cartesian coordinates format, we ignore the track count
-                _output_dict[_frame_ind].append([int(_words[1]), float(_words[3]), float(_words[4]), float(_words[5]), int(_words[2])])
+            elif len(_words) == 6:  # read Cartesian coordinates format, we ignore the track count
+                _output_dict[_frame_ind].append(
+                    [int(_words[1]), float(_words[3]), float(_words[4]), float(_words[5]), int(_words[2])])
         _fid.close()
         return _output_dict
 
@@ -303,7 +305,9 @@ class FeatureClass:
         for _frame_ind in _output_format_dict.keys():
             for _value in _output_format_dict[_frame_ind]:
                 # Write Cartesian format output. Since baseline does not estimate track count we use a fixed value.
-                _fid.write('{},{},{},{},{},{}\n'.format(int(_frame_ind), int(_value[0]), 0, float(_value[1]), float(_value[2]), float(_value[3])))
+                _fid.write(
+                    '{},{},{},{},{},{}\n'.format(int(_frame_ind), int(_value[0]), 0, float(_value[1]), float(_value[2]),
+                                                 float(_value[3])))
         _fid.close()
 
     def segment_labels(self, _pred_dict, _max_frames):
@@ -314,7 +318,7 @@ class FeatureClass:
         :return: Dictionary containing class-wise sound event location information in each segment of audio
                 dictionary_name[segment-index][class-index] = list(frame-cnt-within-segment, azimuth, elevation)
         '''
-        nb_blocks = int(np.ceil(_max_frames/float(self._nb_label_frames_1s)))
+        nb_blocks = int(np.ceil(_max_frames / float(self._nb_label_frames_1s)))
         output_dict = {x: {} for x in range(nb_blocks)}
         for frame_cnt in range(0, _max_frames, self._nb_label_frames_1s):
 
@@ -323,7 +327,7 @@ class FeatureClass:
             # Data structure supports multi-instance occurence of same class
             block_cnt = frame_cnt // self._nb_label_frames_1s
             loc_dict = {}
-            for audio_frame in range(frame_cnt, frame_cnt+self._nb_label_frames_1s):
+            for audio_frame in range(frame_cnt, frame_cnt + self._nb_label_frames_1s):
                 if audio_frame not in _pred_dict:
                     continue
                 for value in _pred_dict[audio_frame]:
@@ -357,7 +361,7 @@ class FeatureClass:
         """
 
         _nb_classes = len(self._unique_classes)
-        _is_polar = _doa_labels.shape[-1] == 2*_nb_classes
+        _is_polar = _doa_labels.shape[-1] == 2 * _nb_classes
         _azi_labels, _ele_labels = None, None
         _x, _y, _z = None, None, None
         if _is_polar:
@@ -365,8 +369,8 @@ class FeatureClass:
             _ele_labels = _doa_labels[:, _nb_classes:]
         else:
             _x = _doa_labels[:, :_nb_classes]
-            _y = _doa_labels[:, _nb_classes:2*_nb_classes]
-            _z = _doa_labels[:, 2*_nb_classes:]
+            _y = _doa_labels[:, _nb_classes:2 * _nb_classes]
+            _z = _doa_labels[:, 2 * _nb_classes:]
 
         _output_dict = {}
         for _frame_ind in range(_sed_labels.shape[0]):
@@ -375,9 +379,12 @@ class FeatureClass:
                 _output_dict[_frame_ind] = []
                 for _tmp_class in _tmp_ind[0]:
                     if _is_polar:
-                        _output_dict[_frame_ind].append([_tmp_class, _azi_labels[_frame_ind, _tmp_class], _ele_labels[_frame_ind, _tmp_class]])
+                        _output_dict[_frame_ind].append(
+                            [_tmp_class, _azi_labels[_frame_ind, _tmp_class], _ele_labels[_frame_ind, _tmp_class]])
                     else:
-                        _output_dict[_frame_ind].append([_tmp_class, _x[_frame_ind, _tmp_class], _y[_frame_ind, _tmp_class], _z[_frame_ind, _tmp_class]])
+                        _output_dict[_frame_ind].append(
+                            [_tmp_class, _x[_frame_ind, _tmp_class], _y[_frame_ind, _tmp_class],
+                             _z[_frame_ind, _tmp_class]])
         return _output_dict
 
     def convert_output_format_polar_to_cartesian(self, in_dict):
@@ -386,9 +393,8 @@ class FeatureClass:
             if frame_cnt not in out_dict:
                 out_dict[frame_cnt] = []
                 for tmp_val in in_dict[frame_cnt]:
-
-                    ele_rad = tmp_val[2]*np.pi/180.
-                    azi_rad = tmp_val[1]*np.pi/180
+                    ele_rad = tmp_val[2] * np.pi / 180.
+                    azi_rad = tmp_val[1] * np.pi / 180
 
                     tmp_label = np.cos(ele_rad)
                     x = np.cos(azi_rad) * tmp_label
@@ -407,8 +413,8 @@ class FeatureClass:
 
                     # in degrees
                     azimuth = np.arctan2(y, x) * 180 / np.pi
-                    elevation = np.arctan2(z, np.sqrt(x**2 + y**2)) * 180 / np.pi
-                    r = np.sqrt(x**2 + y**2 + z**2)
+                    elevation = np.arctan2(z, np.sqrt(x ** 2 + y ** 2)) * 180 / np.pi
+                    r = np.sqrt(x ** 2 + y ** 2 + z ** 2)
                     out_dict[frame_cnt].append([tmp_val[0], azimuth, elevation, tmp_val[-1]])
         return out_dict
 
@@ -463,6 +469,7 @@ class FeatureClass:
 
 def create_folder(folder_name):
     os.makedirs(folder_name, exist_ok=True)
+
 
 def delete_and_create_folder(folder_name):
     if os.path.exists(folder_name) and os.path.isdir(folder_name):
