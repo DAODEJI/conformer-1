@@ -10,17 +10,18 @@ class ComputeSELDResults(object):
             self, params, ref_files_folder=None, use_polar_format=True
     ):
         self._use_polar_format = use_polar_format
-        self._desc_dir = ref_files_folder if ref_files_folder is not None else os.path.join(params['dataset_dir'], 'metadata_dev')
+        self._desc_dir = ref_files_folder if ref_files_folder is not None else os.path.join(params['dataset_dir'],
+                                                                                            'metadata_dev')
         self._doa_thresh = params['lad_doa_thresh']
 
         # Load feature class
         self._feat_cls = cls_feature_class.FeatureClass(params)
-        
+
         # collect reference files
         self._ref_labels = {}
-        for split in os.listdir(self._desc_dir):      
+        for split in os.listdir(self._desc_dir):
             for ref_file in os.listdir(os.path.join(self._desc_dir, split)):
-            # Load reference description file
+                # Load reference description file
                 gt_dict = self._feat_cls.load_output_format_file(os.path.join(self._desc_dir, split, ref_file))
                 if not self._use_polar_format:
                     gt_dict = self._feat_cls.convert_output_format_polar_to_cartesian(gt_dict)
@@ -60,7 +61,8 @@ class ComputeSELDResults(object):
     def get_SELD_Results(self, pred_files_path):
         # collect predicted files info
         pred_files = os.listdir(pred_files_path)
-        eval = SELD_evaluation_metrics.SELDMetrics(nb_classes=self._feat_cls.get_nb_classes(), doa_threshold=self._doa_thresh)
+        eval = SELD_evaluation_metrics.SELDMetrics(nb_classes=self._feat_cls.get_nb_classes(),
+                                                   doa_threshold=self._doa_thresh)
         for pred_cnt, pred_file in enumerate(pred_files):
             # Load predicted output format file
             pred_dict = self._feat_cls.load_output_format_file(os.path.join(pred_files_path, pred_file))
@@ -96,18 +98,22 @@ class ComputeSELDResults(object):
         print('\nCalculating {} scores for {}'.format(score_type_list, os.path.basename(pred_output_format_files)))
 
         for score_type in score_type_list:
-            print('\n\n---------------------------------------------------------------------------------------------------')
-            print('------------------------------------  {}   ---------------------------------------------'.format('Total score' if score_type=='all' else 'score per {}'.format(score_type)))
+            print(
+                '\n\n---------------------------------------------------------------------------------------------------')
+            print('------------------------------------  {}   ---------------------------------------------'.format(
+                'Total score' if score_type == 'all' else 'score per {}'.format(score_type)))
             print('---------------------------------------------------------------------------------------------------')
 
-            split_cnt_dict = self.get_nb_files(pred_files, tag=score_type) # collect files corresponding to score_type
+            split_cnt_dict = self.get_nb_files(pred_files, tag=score_type)  # collect files corresponding to score_type
             # Calculate scores across files for a given score_type
             for split_key in np.sort(list(split_cnt_dict)):
                 # Load evaluation metric class
-                eval = SELD_evaluation_metrics.SELDMetrics(nb_classes=self._feat_cls.get_nb_classes(), doa_threshold=self._doa_thresh)
+                eval = SELD_evaluation_metrics.SELDMetrics(nb_classes=self._feat_cls.get_nb_classes(),
+                                                           doa_threshold=self._doa_thresh)
                 for pred_cnt, pred_file in enumerate(split_cnt_dict[split_key]):
                     # Load predicted output format file
-                    pred_dict = self._feat_cls.load_output_format_file(os.path.join(pred_output_format_files, pred_file))
+                    pred_dict = self._feat_cls.load_output_format_file(
+                        os.path.join(pred_output_format_files, pred_file))
                     if self._use_polar_format:
                         pred_dict = self._feat_cls.convert_output_format_cartesian_to_polar(pred_dict)
                     pred_labels = self._feat_cls.segment_labels(pred_dict, self._feat_cls.get_nb_frames())
@@ -119,25 +125,27 @@ class ComputeSELDResults(object):
                 ER, F, LE, LR = eval.compute_seld_scores()
                 seld_scr = SELD_evaluation_metrics.early_stopping_metric([ER, F], [LE, LR])
 
-                print('\nAverage score for {} {} data using {} coordinates'.format(score_type, 'fold' if score_type=='all' else split_key, 'Polar' if self._use_polar_format else 'Cartesian' ))
+                print('\nAverage score for {} {} data using {} coordinates'.format(score_type,
+                                                                                   'fold' if score_type == 'all' else split_key,
+                                                                                   'Polar' if self._use_polar_format else 'Cartesian'))
                 print('SELD score (early stopping metric): {:0.2f}'.format(seld_scr))
-                print('SED metrics: Error rate: {:0.2f}, F-score:{:0.1f}'.format(ER, 100*F))
-                print('DOA metrics: Localization error: {:0.1f}, Localization Recall: {:0.1f}'.format(LE, 100*LR))
+                print('SED metrics: Error rate: {:0.2f}, F-score:{:0.1f}'.format(ER, 100 * F))
+                print('DOA metrics: Localization error: {:0.1f}, Localization Recall: {:0.1f}'.format(LE, 100 * LR))
+
 
 def reshape_3Dto2D(A):
     return A.reshape(A.shape[0] * A.shape[1], A.shape[2])
 
 
 if __name__ == "__main__":
-    pred_output_format_files = 'results/4_foa_dev_test' # Path of the DCASEoutput format files
+    pred_output_format_files = 'results/4_foa_dev_test'  # Path of the DCASEoutput format files
 
     # Compute just the DCASE 2021 final results 
     score_obj = ComputeSELDResults(parameter.get_params())
     ER, F, LE, LR, seld_scr = score_obj.get_SELD_Results(pred_output_format_files)
     print('SELD score (early stopping metric): {:0.2f}'.format(seld_scr))
-    print('SED metrics: Error rate: {:0.2f}, F-score:{:0.1f}'.format(ER, 100*F))
-    print('DOA metrics: Localization error: {:0.1f}, Localization Recall: {:0.1f}'.format(LE, 100*LR))
+    print('SED metrics: Error rate: {:0.2f}, F-score:{:0.1f}'.format(ER, 100 * F))
+    print('DOA metrics: Localization error: {:0.1f}, Localization Recall: {:0.1f}'.format(LE, 100 * LR))
 
     # Compute DCASE 2021 results along with room-wise performance
     score_obj.get_consolidated_SELD_results(pred_output_format_files)
-

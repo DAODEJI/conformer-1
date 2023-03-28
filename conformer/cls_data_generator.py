@@ -5,7 +5,7 @@
 import os
 import numpy as np
 import cls_feature_class
-from IPython import embed
+# from IPython import embed
 from collections import deque
 import random
 
