@@ -34,6 +34,7 @@ class ConvolutionalLayer(nn.Module):
         return x
 
 
+# 池化层
 class MaxpoolLayer(nn.Module):
     def __init__(
             self,
@@ -47,6 +48,7 @@ class MaxpoolLayer(nn.Module):
         return x
 
 
+# 全连接层
 class LinearLayer(nn.Module):
 
     def __init__(
