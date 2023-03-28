@@ -7,10 +7,10 @@ import joblib
 # from IPython import embed
 import matplotlib.pyplot as plot
 import librosa
-
-plot.switch_backend('agg')
 import shutil
 import math
+
+plot.switch_backend('agg')
 
 
 def nCr(n, r):
