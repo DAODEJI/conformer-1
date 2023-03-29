@@ -32,7 +32,7 @@ class ComputeSELDResults(object):
 
     @staticmethod
     def get_nb_files(file_list, tag='all'):
-        '''
+        """
         Given the file_list, this function returns a subset of files corresponding to the tag.
 
         Tags supported
@@ -42,7 +42,7 @@ class ComputeSELDResults(object):
         :param file_list: complete list of predicted files
         :param tag: Supports two tags 'all', 'ir'
         :return: Subset of files according to chosen tag
-        '''
+        """
         _group_ind = {'room': 10}
         _cnt_dict = {}
         for _filename in file_list:
@@ -80,13 +80,13 @@ class ComputeSELDResults(object):
         return ER, F, LE, LR, seld_scr
 
     def get_consolidated_SELD_results(self, pred_files_path, score_type_list=['all', 'room']):
-        '''
+        """
             Get all categories of results.
             ;score_type_list: Supported
                 'all' - all the predicted files
                 'room' - for individual rooms
 
-        '''
+        """
 
         # collect predicted files info
         pred_files = os.listdir(pred_files_path)
